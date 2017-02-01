@@ -1,0 +1,53 @@
+<link rel="import" href="../bower_components/polymer/polymer.html"/>
+<link rel="import" href="../bower_components/px-card/px-card.html"/>
+<link rel="import" href="../bower_components/rmd-simple-line-chart/px-simple-line-chart.html"/>
+<link rel="import" href="../bower_components/ref-list-picker/ref-list-picker.html"/>
+
+<dom-module id="rmd-ref-app-live-card">
+  <link rel="import" type="css" href="css/rmd-ref-app-cards.css"/>
+  <template>
+  	<px-card header-text="Live Data">
+      <br/>
+      <div class="layout layout--full">
+        <div class="layout__item u-1/6">
+          <ref-list-picker id="tsLiveParams" key-field="meterUri" selected-options="{{selectedParams}}"></ref-list-picker>
+        </div>
+        <div class="layout__item">
+          <template is="dom-if" if="{{showAssetLink}}">
+            <button on-click="hideLiveData" class="btn asset-data-link">See Asset Performance</button>
+          </template>
+          <h4>{{title}}</h4>
+          <!-- <div style="text-align: right;"> -->
+            <button class=btn on-click="openWebSocket">
+              <i class="fa fa-play"></i>
+              Start Stream
+            </button>
+            <button class=btn on-click="closeWebSocket">
+              <i class="fa fa-pause"></i>
+              Pause Stream
+            </button>
+          <!-- </div> -->
+          <br/>&nbsp;<br/>
+          <px-simple-line-chart
+            id="liveChart"
+            line-data="{{lineData}}"
+            width="500"
+            height="400"
+            min="{{min}}"
+            max="{{max}}"
+            threshold-low="{{thresholdLow}}"
+            threshold-low-label="{{thresholdLowLabel}}"
+            threshold-high="{{thresholdHigh}}"
+            threshold-high-label="{{thresholdHighLabel}}"
+            min-label="{{minLabel}}"
+            max-label="{{maxLabel}}"
+            columns="10"
+            rows="{{rows}}"
+          ></px-simple-line-chart>
+        </div>
+      </div>
+    </px-card>
+  </template>
+</dom-module>
+
+<script src="./rmd-ref-app-live-card.js"></script>

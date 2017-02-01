@@ -1,0 +1,50 @@
+<px-card id="home-page">
+  <article role="article">
+    <h2 class="u-mt0 u-pt+">About this RM&D Application</h2>
+    <div class=flex>
+      <p>Remote monitoring and diagnostics (RM&D) applications are used in industries to monitor machines to report irregularities in operation and analyze patterns of behavior and performance over time. Monitoring and diagnostic applications use a set of algorithms, processes, and tools to monitor the health of an asset and detect faults before they turn into failures.</p>
+    </div>
+
+    <p>
+        This RM&D reference app is a good starting point for understanding Predix cloud application development.  This app was created from a fork of the Predix Experience Seed app, then the user interface was customized for the needs of RM&D.  The app also demonstrates how you can
+    </p>
+    <div class="flex">
+        <div class="u-1/2">
+            <li>Integrate your backend services</li>
+            <li>Model assets and meters</li>
+            <li>Ingest data into time series</li>
+            <li>Customize your user interface</li>
+            <li>Secure your application using Predix authentication service</li>
+        </div>
+        <div class="u-1/2">
+            <li>Use Predix Contextual Dashboard to browse assets</li>
+            <li>Use Predix widgets - Data Grid, and Time-series</li>
+            <li>Integrate Predix cloud services - Asset, Time Series, Dashboard Views</li>
+            <li>Visualize Predix Machine live data</li>
+        </div>
+    </div>
+
+    <h3>Accessing the Source Code</h3>
+    <p>Source code is available to everyone on Github.com.  Code for this UI application is in the <a href="https://github.com/predixdev/rmd-ref-app-ui">rmd-ref-app-ui</a> repo.</p>
+      <p class="u-1/6 u-m++">
+        <a target="_blank" href="https://github.com/predixdev/predix-rmd-ref-app#predix-rmd-reference-app" class="btn btn--large">
+          <i class="fa fa-github"></i>
+          Github Repo
+        </a>
+      </p>
+
+    <h3>Using the application</h3>
+    Click on Dashboard tab, and click "Select an Asset" to browse all assets.  In a Predix dashboard application like this, views are associated to asset classifications.  In this application there are views associated with groups of assets, like the Predix Energy > Richmond > Refinery group.
+    <br/>
+    To see aggregated details on the refinery group, select it in the asset browser, and click "Open".  You will see a view with two components - a summary component at the top, and the datagrid at the bottom.
+    <br/>
+    To see details on an asset, browse to Predix Energy > Richmond > Refinery > Bently Compressor, and click "Open".  You will see the "Compressor Data" view with several components: rmd-summary, rmd-px-data-table, ref-list-picker, ref-digital-meter, px-chart, etc.  On this view, you can experiment with several of the UI components.  In the "Asset Performance" datagrid, you can sort by clicking on column headers, search for meters, and refresh to see the latest meter readings.  Below that, you can select multiple parameters to chart on the time series widget, and change the date range.  In the top right corner is the "view selector", showing the current view as "Compressor Data".  If you click on that you can switch to the "Live Data" view for the selected Bently Compressor asset.
+    <br/>
+    On the Live Data view, you'll see data streaming directly from Predix Machine to the browser.  You can select different parameters, and stop/start the data stream.
+
+    <h3>Resources</h3>
+    The Github repo for this RMD Ref app contains a detailed README file, and links to lots of docs:
+    <br/>
+    <b><a href="https://github.com/PredixDev/predix-rmd-ref-app#predix-rmd-reference-app">https://github.com/PredixDev/predix-rmd-ref-app</a></b>
+  </article>
+</px-card>

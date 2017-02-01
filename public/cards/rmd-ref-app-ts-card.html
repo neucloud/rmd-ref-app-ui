@@ -1,0 +1,191 @@
+<link rel="import" href="../bower_components/polymer/polymer.html"/>
+<link rel="import" href="../bower_components/px-card/px-card.html"/>
+<link rel="import" href="../bower_components/px-chart/px-chart.html"/>
+<link rel="import" href="../bower_components/ref-list-picker/ref-list-picker.html"/>
+
+<script src="../bower_components/moment/min/moment.min.js"></script>
+
+<dom-module id="rmd-ref-app-ts-card">
+  <link rel="import" type="css" href="css/rmd-ref-app-cards.css"/>
+  <template>
+    <!-- {{context.name}} -->
+    <px-card header-text="Parameter Comparison">
+      <br/>
+      <div class="layout layout--full">
+        <div class="layout__item u-1/6">
+          <ref-list-picker id="tsParams" key-field="meterUri" selected-options="{{selectedParams}}" multi></ref-list-picker>
+        </div>
+        <div class="layout__item">
+          <!-- set custom legend properties here, so it appears below the date picker controls. -->
+          <px-chart id="tsChart" height="500" legend='{"y": 25, "floating": false, "enabled": true, "useHTML": true, "verticalAlign": "top", "align": "left", "layout": "vertical", "itemStyle": {"fontSize": "inherit", "fontWeight": "normal"}}' chart-state="{{chartState}}" tooltip-type="condensed" series-events-width="1">
+            <px-chart-controls id="tsChartControls" data-controls show-date-range="true" display-options='{ "displayType": "normal","submitButtonText": "Update", "submitButtonIcon": "icon-arrow-right" }'></px-chart-controls>
+            <px-chart-yaxis id="axis0" offset="0"></px-chart-yaxis>
+          </px-chart>
+        </div>
+      </div>
+    </px-card>
+  </template>
+</dom-module>
+<script>
+
+  Polymer({
+    is: 'rmd-ref-app-ts-card',
+
+    properties: {
+      allParams: Array,
+      defaultWeeks: {
+        type: Number,
+        value: 1
+      }
+
+    },
+
+    observers: ['getTimeSeriesData(selectedParams)', 'chartStateChanged(chartState)'],
+
+    ready: function() {
+      // bit of a hack here, to set the default range, and make sure the controls match the query.
+      //  couldn't find any other way to set the default range.
+      // (We need to store chart Min/Max Date here, so we can build the time-series query.)
+      var from = moment().subtract(this.defaultWeeks, 'week'),
+          to = moment();
+      this.chartMinDate = from.valueOf();
+      this.chartMaxDate = to.valueOf();
+      this.$.tsChartControls.set('rangeMs', {
+          from: from.format('x'),
+          to: to.format('x')
+      });
+    },
+
+    getTimeSeriesData: function(selectedParams) {
+      console.log('getTimeSeriesData() called. ' + selectedParams);
+      var self = this,
+          selected = JSON.parse(selectedParams),
+          chart = self.$.tsChart;
+
+      this.updateDeck({
+        liveParam: selected[0]
+      });
+
+      px.dealer.httpRequest({
+        url: '/api/v1/datapoints',
+        method: 'POST',
+        data: this.buildQuery(selected)
+      }).then(function(data){
+        // console.log("GOT DATA: " + JSON.stringify(data));
+        // remove series that are not selected.
+        self.allParams.forEach(function (series) {
+          var alreadyDisplayed = false;
+          for(var j=0; j<selected.length; j++) {
+            if (series.label === selected[j].label) {
+              alreadyDisplayed = true;
+              // console.log('MATCH!!');
+              break;
+            }
+          };
+          if (!alreadyDisplayed && self.$.tsChart.hasSeries(series.label)) {
+            chart.removeSeries(series.label);
+          }
+        });
+        // could potentially add thresholds too/bower_components.
+        // firstSeries.upperThreshold = "30.5";
+        // firstSeries.lowerThreshold = "6.25";
+        for (var i=0; i<data.tags.length; i++) {
+          var tag = data.tags[i];
+          var series = {
+            id: self.getLabelForTag(self.allParams, tag.name),
+            axisId: 'axis0',  // possibly add more yAxes here?
+            data: tag.results[0].values,
+            name: self.getLabelForTag(self.allParams, tag.name)
+          }
+          selected.forEach(function(s) {
+            if (series.name === s.label) {
+              series.color = chart.dataVisColors[chart.seriesColorOrder[s.colorIndex]];
+            }
+          })
+          chart.addSeries(series);
+        };
+      });
+    },
+
+    getLabelForTag: function(allParams, tag) {
+      for (var i = 0; i < allParams.length ; i++) {
+        var param = allParams[i];
+        if (param.sourceTagId === tag) {
+          return param.label;
+        }
+      };
+      console.log("WARNING - no label found for tag: " + tag);
+    },
+
+    buildQuery: function(tags) {
+      var self = this;
+      var query = {
+        "cache_time": 0,
+        "tags": []
+      };
+      if (this.chartMinDate && this.chartMaxDate) {
+        query.start = this.chartMinDate;
+        query.end = this.chartMaxDate;
+      } else {
+        query.start = "1w-ago";
+      }
+      tags.forEach(function(tag) {
+        query.tags.push({
+          "name": tag.sourceTagId,
+          "aggregations": [
+            {
+              "type": "avg",
+              "sampling": {
+                "unit": "s",
+                "value": "30"
+              }
+            }
+          ]
+        });
+      });
+      return query;
+    },
+
+    // context is set for px-dashboard, which updates px-deck, which updates this px-card
+    contextChanged: function(newContext) {
+      // console.log('contextChanged: ' + JSON.stringify(newContext));
+      var self = this;
+      self.allParams = newContext.pickerOptions;
+
+      // Set a color index, so colors in the picker and chart will match:
+      for (var i=0; i<self.allParams.length; i++) {
+        self.allParams[i].colorIndex = i % 9;
+      };
+
+      self.$.tsParams.pickerOptions = self.allParams;
+
+      if (!this.selectedParams || this.selectedParams.length < 1) {
+        self.$.tsParams.defaultOption = this.allParams[0];
+      }
+    },
+
+    deckStateChanged: function(newState, oldState) {
+      // console.log(JSON.stringify(newState));
+      // console.log('time series card - showLiveData: ' + newState.showLiveData);
+      if (newState.showLiveData) {
+        this.hideCard();
+      } else {
+        this.showCard();
+      }
+    },
+
+    chartStateChanged: function(newChartState) {
+      if (newChartState.chartZoom && newChartState.chartZoom.min && newChartState.chartZoom.max) {
+        // console.log("chartStateChanged: " + JSON.stringify(newChartState.chartZoom));
+        if (this.chartMinDate != newChartState.chartZoom.min || this.chartMaxDate != newChartState.chartZoom.max) {
+          this.chartMinDate = newChartState.chartZoom.min;
+          this.chartMaxDate = newChartState.chartZoom.max;
+          this.getTimeSeriesData(this.selectedParams);
+        }
+      }
+
+    },
+
+    behaviors: [px.card]
+  });
+</script>

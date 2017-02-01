@@ -1,0 +1,175 @@
+<link rel="import" href="../bower_components/polymer/polymer.html"/>
+<link rel="import" href="../bower_components/px-card/px-card.html"/>
+<link rel="import" href="../bower_components/rmd-px-data-table/px-data-table.html"/>
+
+<script src="../bower_components/moment/min/moment.min.js"></script>
+
+<dom-module id="rmd-ref-app-table-card">
+  <link rel="import" type="css" href="css/rmd-ref-app-cards.css"/>
+  <template>
+  	<px-card header-text="Asset Performance">
+      <div class="card-header-links layout layout--right">
+        <div class="layout__item u-1/6">
+          <template is="dom-if" if="{{showLiveLink}}">
+            <button class="btn" on-click="showLiveData">See Live Data</button>
+          </template>
+        </div>
+        <div class="layout__item u-1/6">
+        <form>
+          <select on-change="intervalChanged" value="{{refreshInterval}}">
+            <option value="3000">Refresh: 3 sec</option>
+            <option value="5000">Refresh: 5 sec</option>
+            <option value="10000">Refresh: 10 sec</option>
+            <option value="30000">Refresh: 30 sec</option>
+            <option value="-1">Refresh: Never</option>
+          </select>
+        </form>
+        </div>
+      </div>
+      <px-data-table id="assetGrid"></px-data-table>
+    </px-card>
+  </template>
+</dom-module>
+<script>
+
+  Polymer({
+    is: 'rmd-ref-app-table-card',
+
+    properties: {
+      gridData: {
+      	type: Array,
+        notify: true
+      },
+      refreshInterval: {
+        type: Number,
+        notify: true,
+        value: -1
+      },
+      assetUri: {
+        type: String
+      }
+    },
+
+    init: function() {
+      this.updateDeck({showLiveData: false});
+      // For now, we'll use a global variable to share state between decks/bower_components.
+      window.rmdGlobals = window.rmdGlobals || {};
+      this.refreshInterval = window.rmdGlobals.refreshInterval || -1;
+    },
+
+    detached: function() {
+      // console.log('table card detached.  intervalId: ' + this.intervalId);
+      clearInterval(this.intervalId);
+    },
+
+
+    intervalChanged: function(val) {
+      // console.log('intervalChanged: ' + val.target.value);
+      // clearInterval(this.intervalId);
+      var self = this;
+      window.rmdGlobals.refreshInterval = val.target.value;
+      self.refreshInterval = Number(val.target.value);
+      self.updateDeck({refreshInterval: val.target.value});
+      self.pollGridData(self.assetUri, self.refreshInterval);
+    },
+
+    showLiveData: function() {
+      this.updateDeck({showLiveData: true});
+      this.hideCard();
+    },
+
+    getDeltaHtml: function(row) {
+      var html,
+        val = (typeof row.deltaThreshold === "number") ? row.deltaThreshold.toFixed(2) + '%' : '',
+        divClass = row.deltaThresholdColor === 'RED' ? 'rmd-threshold-red' : 'rmd-threshold-green',
+        iconClass = row.deltaThresholdLevel === 'HIGH' ? 'fa-caret-up' : 'fa-caret-down';
+      html = '<div class="style-scope aha-table ' + divClass + '"><i class="style-scope aha-table fa ' + iconClass + '"></i> ' + val + '</div>'
+      return html;
+    },
+
+    getMeterHtml: function(row) {
+      var html = '<div class="style-scope aha-table">' + row.tag;
+      if (row.tag_isKpi) {
+        html += ' <i title="KPI" class="fa fa-bar-chart"></i>'
+      }
+      if (row.tag_isPM) {
+        html += ' <i title="Predix Machine" class="fa fa-line-chart"></i>'
+      }
+      html += '</div>';
+      return html;
+    },
+
+    getGridData: function(uri) {
+      var self = this;
+      this.getData('/api/datagrid' + uri).then(function(data) {
+        // console.log("Grid data: " + JSON.stringify(data));
+
+        var uiData = [];
+        data.tableData.forEach(function(row) {
+          var uiRow = {
+            // HACK: keys containing underscores will be not be displayed by Aha table.
+            _rmdId : row.tag,
+            meter: self.getMeterHtml(row),
+            "Alert Status": row.alertStatus ? '<div class="style-scope aha-table rmd-circle rmd-circle-red"></div>' : '<div class="style-scope aha-table rmd-circle"></div>',
+            "Current Value": (typeof row.currentValue === "number") ? row.currentValue.toFixed(3) : '',
+            units: row.unit,
+            "Last Meter Reading": moment(row.lastTagReading).format('YYYY-MM-DD hh:mm:ss ZZ'),
+            "Threshold Min": (typeof row.thresholdMin === "number") ? row.thresholdMin + '' : '',
+            "Threshold Max": (typeof row.thresholdMax === "number") ? row.thresholdMax + '' : '',
+            "Delta Threshold": self.getDeltaHtml(row)
+          }
+          uiData.push(uiRow);
+        });
+        self.$.assetGrid.tableData = uiData;
+      });
+      // .then(function(error) {
+      //   console.log('error getting table data: ' + error);
+      // });
+    },
+
+    pollGridData: function(uri, refreshInterval) {
+      var self = this;
+      self.getGridData(uri);
+
+      var self = this;
+      // console.log('summary card clearing interval: ' + self.intervalId);
+      clearInterval(self.intervalId);
+      if (refreshInterval > 0) {
+        self.intervalId = setInterval(function() {
+            // console.log('summary card getting data: ' + uri);
+            self.getGridData(uri);
+        }, refreshInterval);
+        // console.log('summary card - new interval id: ' + self.intervalId);
+      } else {
+        self.getGridData(uri);
+      }
+    },
+
+    // context is set for px-dashboard, which updates px-deck, which updates this px-card
+    contextChanged: function(newContext) {
+      // console.log('contextChanged: ' + JSON.stringify(newContext));
+    	var self = this;
+    	self.kpis = [];
+    	self.overall = null;
+      // console.log('table card context changed.  refresh interval: ' + self.refreshInterval);
+      clearInterval(self.intervalId);
+      self.showLiveLink = (newContext.uri.indexOf('group') < 0);
+      self.assetUri = newContext.uri;
+      if (window.rmdGlobals && window.rmdGlobals.refreshInterval) {
+        self.refreshInterval = window.rmdGlobals.refreshInterval || -1;
+      }
+      self.pollGridData(self.assetUri, self.refreshInterval);
+    },
+
+    deckStateChanged: function(newState, oldState) {
+      // console.log('table card - showLiveData: ' + newState.showLiveData);
+      if (newState.showLiveData) {
+        this.hideCard();
+      } else {
+        this.showCard();
+      }
+    },
+
+    behaviors: [px.card]
+  });
+</script>

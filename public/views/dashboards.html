@@ -1,0 +1,40 @@
+<px-context-browser
+    initial-contexts='{{initialContexts}}'
+    handlers="ngScope:handlers"
+    opened-item-name="Select Assets">
+</px-context-browser>
+
+<px-dashboard selected-deck="{{selectedDeck}}" context="{{context}}"></px-dashboard>
+
+<px-card
+  id="dashboard-description-card"
+  header-text="Plant Monitoring and Diagnostics">
+
+
+  <div class="layout">
+    <div class="layout__item u-3/4">
+
+        <p>Click 'Select Assets' above, then drill down to find equipment and view data.</p>
+
+        <p>
+          To see aggregated details on a sample group of refinery assets, select Predix Energy > Richmond > Refinery in the asset browser, and click "Open".
+        </p>
+
+        <p>
+          To see details on an asset, browse to Predix Energy > Richmond > Refinery > Bently Compressor, and click "Open".
+        </p>
+
+        <p>To read more information about this application, select the "About" menu item on the left.</p>
+    </div>
+    <div class="layout__item u-1/4">
+      <a target="_blank" class="btn btn-large" href="https://github.com/predixdev/predix-rmd-ref-app#predix-rmd-reference-app">
+        <i class="fa fa-github"></i>
+        Github Repo
+      </a>
+    </div>
+  </div>
+  <br/>
+  <div style="text-align: center;">
+    <img src="images/good2-turbine.png" alt="good turbine"  width="350px">
+  </div>
+</px-card>

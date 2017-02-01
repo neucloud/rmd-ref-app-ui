@@ -1,0 +1,116 @@
+<link rel="import" href="../bower_components/polymer/polymer.html"/>
+<link rel="import" href="../bower_components/px-card/px-card.html"/>
+<link rel="import" href="../bower_components/ref-digital-meter/ref-digital-meter.html"/>
+
+<dom-module id="rmd-ref-app-summary-card">
+  <link rel="import" type="css" href="css/rmd-ref-app-cards.css"/>
+  <template>
+      <div class="layout layout--right">
+        <template is="dom-repeat" items="{{kpis}}">
+	        <div class="layout__item u-1/6 summary-box">
+				<h4 class="summary-label caps">{{item.label}}</h4>
+				<div>
+					<span class="summary-value">{{item.value}}</span>
+					<span class="summary-uom">{{item.uom}}</span>
+				</div>
+	        </div>
+        </template>
+        <div class="layout__item u-1/4 summary-box" style="width: 28% !important;">
+        	<div style="float: left;">
+				<h4 class="summary-label caps">{{overall.title}}</h4>
+				<div>
+					<span class="summary-value">{{overall.percentage}}</span>
+					<template is="dom-if" if="{{overall.percentage}}">
+						<span class="summary-uom">%</span>
+					</template>
+				</div>
+        	</div>
+        	<div class="summary-meter">
+        		<ref-digital-meter id="summaryMeter" percentage="55" class="hidden"></ref-digital-meter>
+        	</div>
+        </div>
+      </div>
+  </template>
+</dom-module>
+<script>
+
+  Polymer({
+    is: 'rmd-ref-app-summary-card',
+
+    properties: {
+      kpis: {
+      	type: Array
+      },
+      overall: {
+      	type: Object
+      },
+      assetUri: {
+        type: String
+      },
+      refreshInterval: {
+        type: Number,
+        notify: true
+      }
+    },
+
+    init: function() {
+      this.refreshInterval = window.rmdGlobals ? window.rmdGlobals.refreshInterval : -1;
+    },
+
+    detached: function() {
+      // console.log('summary card detached.  intervalId: ' + this.intervalId);
+      clearInterval(this.intervalId);
+    },
+
+    getSummaryData: function(uri) {
+      var self = this;
+      this.getData('/api/datagrid' + uri + '/summary').then(function(data) {
+        // console.log('getSummaryData - got data');
+        self.kpis = data.kpis;
+        self.overall = data.overall;
+        self.$.summaryMeter.percentage = data.overall.percentage;
+        self.$.summaryMeter.toggleClass('hidden', (data.overall.percentage !== 0 && !data.overall.percentage));
+      });
+    },
+
+    pollSummaryData: function(uri, refreshInterval) {
+      var self = this;
+      // console.log('summary card clearing interval: ' + self.intervalId);
+      clearInterval(self.intervalId);
+      if (refreshInterval > 0) {
+        self.intervalId = setInterval(function() {
+            // console.log('summary card getting data: ' + uri);
+            self.getSummaryData(uri);
+        }, refreshInterval);
+        // console.log('summary card - new interval id: ' + self.intervalId);
+      } else {
+        self.getSummaryData(uri);
+      }
+    },
+
+    // context is set for px-dashboard, which updates px-deck, which updates this px-card
+    contextChanged: function(newContext) {
+      // console.log('contextChanged: ' + JSON.stringify(newContext));
+    	var self = this;
+    	self.kpis = [];
+    	self.overall = null;
+      self.assetUri = newContext.uri;
+      // console.log('summary card context changed.  clearing interval: ' + self.intervalId);
+      // console.log('deck state: ' + console.log(JSON.stringify(this.deckState)));
+      clearInterval(self.intervalId);
+      this.pollSummaryData(self.assetUri, self.refreshInterval);
+    },
+
+    deckStateChanged: function(newState, oldState) {
+      var self = this;
+      var temp = window.rmdGlobals ? window.rmdGlobals.refreshInterval : -1;
+      // console.log('summary card deckStateChanged.' + JSON.stringify(newState));
+      // console.log('summary card clearing interval: ' + self.intervalId);
+      // clearInterval(self.intervalId);
+      self.refreshInterval = newState.refreshInterval || temp;
+      self.pollSummaryData(self.assetUri, self.refreshInterval);
+    },
+
+    behaviors: [px.card]
+  });
+</script>
