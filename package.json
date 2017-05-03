@@ -12,6 +12,7 @@
   "scripts": {
     "test": "NODE_TLS_REJECT_UNAUTHORIZED=0 node_modules/protractor/bin/protractor test/protractor.conf.js",
     "start": "grunt serve",
+    "build": "npm install -g bower grunt && bower install",
     "version": "git add package.json && git commit -m \"version bump\"",
     "postversion": "git push"
   },
