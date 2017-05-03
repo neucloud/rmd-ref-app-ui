@@ -63,7 +63,7 @@ module.exports = {
             port: 8080,
             base: 'public',
             open: true,
-            hostname: 'localhost',
+            hostname: '0.0.0.0',
             middleware: function (connect, options) {
                 var middlewares = [];
 
