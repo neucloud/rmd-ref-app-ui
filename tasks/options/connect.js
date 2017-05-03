@@ -60,7 +60,7 @@ var environment = function(req, res, next) {
 module.exports = {
     server: {
         options: {
-            port: 9000,
+            port: 8080,
             base: 'public',
             open: true,
             hostname: 'localhost',
