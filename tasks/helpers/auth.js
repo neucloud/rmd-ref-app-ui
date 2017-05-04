@@ -2,15 +2,17 @@ var qs = require('querystring');
 var url = require('url');
 var rewriteModule = require('http-rewrite-middleware');
 var request = require('request');
+var btoa = require('btoa');
 
 module.exports = {
   init: function (options) {
     options = options || {}
-    this.clientId = options.clientId || 'predix-seed';
+    this.clientId = options.clientId;
+    this.base64ClientCredential = btoa(options.clientId + ':' + options.clientSecret);
     this.serverUrl = options.serverUrl;
+    this.redirect_uri = options.redirect_uri;
+    this.defaultClientRoute = options.defaultClientRoute;
     this.accessToken = null;
-    this.defaultClientRoute = options.defaultClientRoute || '/about';
-    this.base64ClientCredential = options.base64ClientCredential || 'cHJlZGl4LXNlZWQ6TTBhVzdrTmZRRndyTTZ3ZHJpV2h3bVc2ck1HQ045Q0x1cnI5VnI3elc0cz0=';
     this.user = null;
     return this.getMiddlewares();
   },
@@ -23,7 +25,7 @@ module.exports = {
       form: {
         'grant_type': 'authorization_code',
         'code': authCode,
-        'redirect_uri': 'http://localhost:9000/callback',
+        'redirect_uri': this.redirect_uri,
         'state': this.defautClientRoute
       },
       headers: {
@@ -38,14 +40,10 @@ module.exports = {
 
         //get user info
         request({
-          method: 'post',
-          url: self.serverUrl + '/check_token',
+          method: 'get',
+          url: self.serverUrl + '/api/user',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': 'Basic ' + self.base64ClientCredential
-          },
-          form: {
-            'token': res.access_token
+            'Authorization': self.accessToken
           }
         }, function (error, response, body) {
           self.user = JSON.parse(body);
@@ -64,7 +62,7 @@ module.exports = {
     var rewriteMiddleware = rewriteModule.getMiddleware([
         {
           from: '^/login(.*)$',
-          to: uaa.serverUrl + '/oauth/authorize$1&response_type=code&scope=&client_id=' + uaa.clientId + '&redirect_uri=http%3A%2F%2Flocalhost%3A9000%2Fcallback',
+          to: uaa.serverUrl + '/oauth/authorize$1&response_type=code&scope=&client_id=' + uaa.clientId + '&redirect_uri=' + uaa.redirect_uri,
           redirect: 'permanent'
         },
         {
@@ -95,7 +93,7 @@ module.exports = {
         });
       } else if (req.url.match('/userinfo')) {
         if (uaa.hasValidSession()) {
-          res.end(JSON.stringify({email: uaa.user.email, user_name: uaa.user.user_name}));
+          res.end(JSON.stringify({email: uaa.user.email, user_name: uaa.user.name}));
         } else {
           next(401);
         }

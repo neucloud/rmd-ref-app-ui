@@ -42,7 +42,8 @@
     "rjs-build-analysis": "0.0.3",
     "time-grunt": "^0.4.0",
     "grunt": "^0.4.5",
-    "vulcanize": "1.14.12"
+    "vulcanize": "1.14.12",
+    "btoa": "1.1.2"
   },
   "devDependencies": {
     "grunt-karma": "~0.8.2",
