@@ -65,11 +65,11 @@ module.exports = {
           to: uaa.serverUrl + '/oauth/authorize$1&response_type=code&scope=&client_id=' + uaa.clientId + '&redirect_uri=' + uaa.redirect_uri,
           redirect: 'permanent'
         },
-        {
-          from: '^/logout',
-          to: uaa.serverUrl + '/logout?redirect=http://localhost:9000',
-          redirect: 'permanent'
-        },
+        // {
+        //   from: '^/logout',
+        //   to: uaa.serverUrl + '/logout?redirect=http://localhost:9000',
+        //   redirect: 'permanent'
+        // },
         {
           from: '^[^\.|]+$',   //catch all client side routes
           to: '/index.html'
