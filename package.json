@@ -61,7 +61,6 @@
     "karma-script-launcher": "~0.1.0",
     "karma-spec-reporter": "0.0.13",
     "moment": "2.14.1",
-    "phantomjs": "1.9.7-15",
     "protractor": "^4.0.4"
   }
 }
