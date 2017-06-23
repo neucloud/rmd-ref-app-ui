@@ -41,7 +41,7 @@ module.exports = {
         //get user info
         request({
           method: 'get',
-          url: self.serverUrl + '/api/user',
+          url: self.serverUrl + '/api/user/info',
           headers: {
             'Authorization': self.accessToken
           }
@@ -62,14 +62,14 @@ module.exports = {
     var rewriteMiddleware = rewriteModule.getMiddleware([
         {
           from: '^/login(.*)$',
-          to: uaa.serverUrl + '/oauth/authorize$1&response_type=code&scope=&client_id=' + uaa.clientId + '&redirect_uri=' + uaa.redirect_uri,
+          to: uaa.serverUrl + '/oauth/authorize$1&response_type=code&scope=user_info&client_id=' + uaa.clientId + '&redirect_uri=' + uaa.redirect_uri,
           redirect: 'permanent'
         },
-        // {
-        //   from: '^/logout',
-        //   to: uaa.serverUrl + '/logout?redirect=http://localhost:9000',
-        //   redirect: 'permanent'
-        // },
+        {
+          from: '^/logout',
+          to: uaa.serverUrl + '/api/logout',
+          redirect: 'permanent'
+        },
         {
           from: '^[^\.|]+$',   //catch all client side routes
           to: '/index.html'
@@ -93,7 +93,7 @@ module.exports = {
         });
       } else if (req.url.match('/userinfo')) {
         if (uaa.hasValidSession()) {
-          res.end(JSON.stringify({email: uaa.user.email, user_name: uaa.user.name}));
+          res.end(JSON.stringify({email: uaa.user.email, user_name: uaa.user.username}));
         } else {
           next(401);
         }
